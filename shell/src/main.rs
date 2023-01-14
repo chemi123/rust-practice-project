@@ -30,6 +30,7 @@ fn main() {
             let args = parts;
 
             match command {
+                // cdは子プロセスに実行させたところで親プロセスの状態は何も変わらないため, 親プロセス自体が見ているディレクトリを変更する
                 "cd" => {
                     let new_dir = args.peekable().peek().map_or("/", |x| *x);
                     let root = Path::new(new_dir);
