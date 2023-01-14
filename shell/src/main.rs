@@ -44,7 +44,7 @@ fn main() {
                     // - previous_commandがNone, つまりcommandがcatの場合
                     //     Stdio::inherit()で親プロセスの標準入力を受け取る -> terminalに表示されている画面のカーソルから打ち込まれた文字列が標準入力になる
                     // - previout_commandがSome, つまりcommandがgrepの場合
-                    //     前回のコマンド`cat file.txt`が子プロセスで実行されており、その標準出力を標準入力にする. その結果grep somethingに対してfile.txtの内容が入力される
+                    //     前回のコマンド`cat file.txt`が子プロセスで実行されており, その標準出力を標準入力にする. その結果grep somethingに対してfile.txtの内容が入力される
                     let stdin = previous_command.map_or(Stdio::inherit(), |output: Child| {
                         Stdio::from(output.stdout.unwrap())
                     });
