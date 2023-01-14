@@ -43,9 +43,10 @@ fn main() {
                 // 例えばコマンドが`cat file.txt | grep something`の時を例にして考えてみる
                 _ => {
                     // 1. previous_commandがNone, つまりcommandがcatの場合
-                    //     Stdio::inherit()で親プロセスの標準入力を受け取る -> terminalに表示されている画面のカーソルから打ち込まれた文字列が標準入力になる
+                    //     Stdio::inherit()で親プロセスの標準入力を受け取る -> terminalに表示されている画面のカーソルから打ち込まれた文字列が標準入力になる.
+                    //     ただしCommand::new()でcommandおよびargsがそれぞれcat, file.txtと指定されているため, これに関してはstdinを指定しなくても動く(確認済み)
                     // 2. previout_commandがSome, つまりcommandがgrepの場合
-                    //     前回のコマンド`cat file.txt`が子プロセスで実行されており, その標準出力を標準入力にする. その結果grep somethingに対してfile.txtの内容が入力される
+                    //     前回のコマンド`cat file.txt`が子プロセスで実行されており, その標準出力を標準入力にする. その結果grep somethingに対してfile.txtの内容が入力される.
                     let stdin = previous_command.map_or(Stdio::inherit(), |output: Child| {
                         Stdio::from(output.stdout.unwrap())
                     });
