@@ -19,7 +19,7 @@ fn main() {
         let mut input = String::new();
         stdin().read_line(&mut input).unwrap();
 
-        // peekableは次の値を"consume"しないで覗き見することができるiterator. 名前のまんま
+        // peekableは"consume"しないで次の値を覗き見することができるiterator. 名前のまんま
         let mut commands = input.trim().split("|").peekable();
         let mut previous_command = None;
 
