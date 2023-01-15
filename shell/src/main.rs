@@ -10,6 +10,7 @@ use std::{
 fn main() {
     loop {
         let home_dir = home_dir().unwrap().display().to_string();
+        // 例えばhome_dirが/home/userの時、/home/user/workspace/home/userのようなディレクトリにいた場合バグるのでしっかりやるならstarts_withとか使うべき
         let current_dir = env::current_dir()
             .unwrap()
             .display()
