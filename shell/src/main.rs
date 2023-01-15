@@ -1,4 +1,5 @@
 use colored::*;
+use dirs::home_dir;
 use std::{
     env,
     io::{stdin, stdout, Write},
@@ -8,16 +9,23 @@ use std::{
 
 fn main() {
     loop {
-        let current_dir = env::current_dir().unwrap();
-        print!(
-            "{} {}",
-            current_dir.display().to_string().cyan(),
-            "$ ".white()
-        );
+        let home_dir = home_dir().unwrap().display().to_string();
+        let current_dir = env::current_dir()
+            .unwrap()
+            .display()
+            .to_string()
+            .replace(home_dir.as_str(), "~");
+
+        print!("{} {}", current_dir.blue().bold(), "$ ".white());
         stdout().flush().unwrap();
 
         let mut input = String::new();
         stdin().read_line(&mut input).unwrap();
+
+        // もうちょっとオシャレにやりたい
+        if input == "\n" {
+            continue;
+        }
 
         // peekableは"consume"しないで次の値を覗き見することができるiterator. 名前のまんま
         let mut commands = input.trim().split("|").peekable();
