@@ -2,6 +2,8 @@ use std::{collections::VecDeque, num::ParseFloatError};
 
 use crate::entity::{risp_err::RispErr, risp_exp::RispExp};
 
+// originalのengineの方は関数が相互依存しているなど気になる点があった. こっちではそれを修正してみる
+
 pub fn tokenize2(expr: &str) -> VecDeque<String> {
     expr.replace("(", "( ")
         .replace(")", " )")
