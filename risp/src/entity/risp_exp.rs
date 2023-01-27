@@ -1,3 +1,5 @@
+use core::fmt;
+
 use super::risp_err::RispErr;
 
 #[derive(Clone)]
@@ -8,19 +10,18 @@ pub enum RispExp {
     Func(fn(&[RispExp]) -> Result<RispExp, RispErr>),
 }
 
-// 要素にFuncがあるため、RispExpはDebugをderiveできない.
-// デバッグしたかったので実装. 再帰処理になっており, RispExp自体もListで再帰構造になっているため, RispExpを再帰しすぎるとスタックオーバーフローするのと, しなくても見づらくなる
-pub fn print_risp_exp(exp: &RispExp) {
-    match exp {
-        RispExp::Symbol(s) => print!("Symbol({}) ", s),
-        RispExp::Number(f) => print!("Number({}) ", f),
-        RispExp::List(v) => {
-            print!("{{ ");
-            for e in v.iter() {
-                print_risp_exp(e)
+impl fmt::Display for RispExp {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let str = match self {
+            RispExp::Symbol(s) => s.clone(),
+            RispExp::Number(n) => n.to_string(),
+            RispExp::List(list) => {
+                // to_string()はfmt::Displayを実装していると使えるため、ここで再帰的にfmtが呼ばれる
+                let xs: Vec<String> = list.iter().map(|x| x.to_string()).collect();
+                format!("({})", xs.join(" "))
             }
-            println!("}}");
-        }
-        RispExp::Func(_) => print!("Function "),
+            RispExp::Func(_) => "Function {}".to_string(),
+        };
+        write!(f, "{}", str)
     }
 }
