@@ -12,7 +12,7 @@ pub fn tokenize2(expr: &str) -> VecDeque<String> {
         .collect()
 }
 
-pub fn parse2(tokens: &mut VecDeque<String>) -> Result<(RispExp, VecDeque<String>), RispErr> {
+pub fn parse2(mut tokens: VecDeque<String>) -> Result<(RispExp, VecDeque<String>), RispErr> {
     let token = tokens
         .pop_front()
         .ok_or(RispErr::Reason("tokens is empty".to_string()))?;
@@ -29,10 +29,11 @@ pub fn parse2(tokens: &mut VecDeque<String>) -> Result<(RispExp, VecDeque<String
         let token = tokens.pop_front().unwrap();
         match token.as_str() {
             "(" => {
-                let (risp_exp, _) = parse2(tokens)?;
+                let (risp_exp, ret_tokens) = parse2(tokens)?;
+                tokens = ret_tokens;
                 res.push(risp_exp);
             }
-            ")" => return Ok((RispExp::List(res), tokens.clone())),
+            ")" => return Ok((RispExp::List(res), tokens)),
             _ => res.push(parse_atom(&token)),
         };
     }
