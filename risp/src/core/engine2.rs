@@ -12,41 +12,39 @@ pub fn tokenize2(expr: &str) -> VecDeque<String> {
         .collect()
 }
 
-pub fn parse2(mut tokens: VecDeque<String>) -> Result<(RispExp, VecDeque<String>), RispErr> {
+pub fn parse2(tokens: &mut VecDeque<String>) -> Result<(RispExp, VecDeque<String>), RispErr> {
     let token = tokens
         .pop_front()
         .ok_or(RispErr::Reason("tokens is empty".to_string()))?;
+    let mut res = Vec::new();
 
     // &tokenで&Stringになる. &[]はスライス(&str)になるため, &token[..]はtokenのスライスの全体を表すことになる
     match &token[..] {
-        "(" => read_seq2(tokens),
-        ")" => Err(RispErr::Reason(
-            "unexpected closing bracket. `)`".to_string(),
-        )),
-        _ => Err(RispErr::Reason("unexpected token".to_string())),
-    }
-}
-
-pub fn read_seq2(mut tokens: VecDeque<String>) -> Result<(RispExp, VecDeque<String>), RispErr> {
-    let mut res = Vec::new();
+        "(" => (),
+        ")" => return Err(RispErr::Reason("unexpected closing bracket".to_string())),
+        _ => res.push(parse_atom(&token)),
+    };
 
     while !tokens.is_empty() {
-        // !token.is_empty()の時だけループが実行されるため, tokensが空でpanicしてクラッシュすることはない
         let token = tokens.pop_front().unwrap();
-        if token == ")" {
-            return Ok((RispExp::List(res), tokens));
-        }
-        res.push(parse_atom2(token));
+        match token.as_str() {
+            "(" => {
+                let (risp_exp, _) = parse2(tokens)?;
+                res.push(risp_exp);
+            }
+            ")" => return Ok((RispExp::List(res), tokens.clone())),
+            _ => res.push(parse_atom(&token)),
+        };
     }
 
     // "( + 1"などのように閉じ括弧がないケースはここに来る
     Err(RispErr::Reason("invalid expression".to_string()))
 }
 
-fn parse_atom2(token: String) -> RispExp {
+fn parse_atom(token: &str) -> RispExp {
     let potential_float: Result<f64, ParseFloatError> = token.parse();
     match potential_float {
         Ok(v) => RispExp::Number(v),
-        Err(_) => RispExp::Symbol(token),
+        Err(_) => RispExp::Symbol(token.to_string()),
     }
 }
