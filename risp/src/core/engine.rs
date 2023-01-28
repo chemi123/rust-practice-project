@@ -11,8 +11,7 @@ pub fn tokenize(expr: &str) -> Vec<String> {
 }
 
 // parseとread_seqが相互に依存しているためあまりよくない
-// lifetimeもあまり多用したくない。このケースの場合は引数が一つなので省略できるはず
-pub fn parse<'a>(tokens: &'a [String]) -> Result<(RispExp, &'a [String]), RispErr> {
+pub fn parse(tokens: &[String]) -> Result<(RispExp, &[String]), RispErr> {
     let (token, rest) = tokens
         .split_first()
         .ok_or(RispErr::Reason("could not get tokens".to_string()))?;
@@ -26,12 +25,12 @@ pub fn parse<'a>(tokens: &'a [String]) -> Result<(RispExp, &'a [String]), RispEr
     }
 }
 
-fn read_seq<'a>(tokens: &'a [String]) -> Result<(RispExp, &'a [String]), RispErr> {
+fn read_seq(tokens: &[String]) -> Result<(RispExp, &[String]), RispErr> {
     let mut res = vec![];
     let mut xs = tokens;
     loop {
         let (next_token, rest) = xs.split_first().ok_or(RispErr::Reason(
-            "ould not find closing bracket. `)`".to_string(),
+            "would not find closing bracket. `)`".to_string(),
         ))?;
         if next_token == ")" {
             return Ok((RispExp::List(res), rest));
