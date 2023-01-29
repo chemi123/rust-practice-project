@@ -10,6 +10,18 @@ pub enum RispExp {
     Func(fn(&[RispExp]) -> Result<RispExp, RispErr>),
 }
 
+pub fn parse_list_of_float(exps: &[RispExp]) -> Result<Vec<f64>, RispErr> {
+    // parse_single_floatでErrが帰ってきた場合はそのままErrを返す
+    exps.iter().map(|x| parse_single_float(x)).collect()
+}
+
+pub fn parse_single_float(exp: &RispExp) -> Result<f64, RispErr> {
+    match exp {
+        RispExp::Number(num) => Ok(*num),
+        _ => Err(RispErr::Reason("exptected a number".to_string())),
+    }
+}
+
 impl fmt::Display for RispExp {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let str = match self {

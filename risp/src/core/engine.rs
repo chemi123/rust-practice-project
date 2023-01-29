@@ -1,4 +1,4 @@
-use std::{collections::HashMap, num::ParseFloatError};
+use std::num::ParseFloatError;
 
 use crate::entity::{risp_env::RispEnv, risp_err::RispErr, risp_exp::RispExp};
 
@@ -50,47 +50,6 @@ fn parse_atom(token: &str) -> RispExp {
     }
 }
 
-fn default_env() -> RispEnv {
-    let mut data = HashMap::new();
-    data.insert(
-        "+".to_string(),
-        RispExp::Func(|args| -> Result<RispExp, RispErr> {
-            let sum = parse_list_of_float(args)?
-                .iter()
-                .fold(0.0, |sum, a| sum + *a);
-
-            Ok(RispExp::Number(sum))
-        }),
-    );
-
-    data.insert(
-        "-".to_string(),
-        RispExp::Func(|args| -> Result<RispExp, RispErr> {
-            let floats = parse_list_of_float(args)?;
-            let first = floats
-                .first()
-                .ok_or(RispErr::Reason("expected at least one number".to_string()))?;
-            let sum_of_rest = floats[1..].iter().fold(0.0, |sum, a| sum + *a);
-
-            Ok(RispExp::Number(first - sum_of_rest))
-        }),
-    );
-
-    RispEnv::new(data)
-}
-
-fn parse_list_of_float(args: &[RispExp]) -> Result<Vec<f64>, RispErr> {
-    // ここのmap内のparse_single_floatでErr(RispErr)が返ってきた場合はそのままErr(RispErr)がreturnされる
-    args.iter().map(|x| parse_single_float(&x)).collect()
-}
-
-fn parse_single_float(exp: &RispExp) -> Result<f64, RispErr> {
-    match exp {
-        RispExp::Number(num) => Ok(*num),
-        _ => Err(RispErr::Reason("expected a number".to_string())),
-    }
-}
-
 fn eval(exp: &RispExp, env: &RispEnv) -> Result<RispExp, RispErr> {
     match exp {
         RispExp::Symbol(symbol) => env
@@ -121,4 +80,9 @@ fn eval(exp: &RispExp, env: &RispEnv) -> Result<RispExp, RispErr> {
         }
         RispExp::Func(_) => Err(RispErr::Reason("unexpected form".to_string())),
     }
+}
+
+pub fn parse_eval(expr: String, env: &RispEnv) -> Result<RispExp, RispErr> {
+    let (parsed_exp, _) = parse(&tokenize(&expr))?;
+    Ok(eval(&parsed_exp, env)?)
 }
