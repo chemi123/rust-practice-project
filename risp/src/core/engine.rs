@@ -82,7 +82,7 @@ fn eval(exp: &RispExp, env: &RispEnv) -> Result<RispExp, RispErr> {
     }
 }
 
-pub fn parse_eval(expr: String, env: &RispEnv) -> Result<RispExp, RispErr> {
+pub fn parse_risp_exp_string(expr: String, env: &RispEnv) -> Result<RispExp, RispErr> {
     let (parsed_exp, _) = parse(&tokenize(&expr))?;
     Ok(eval(&parsed_exp, env)?)
 }

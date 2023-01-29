@@ -1,9 +1,6 @@
 use std::collections::HashMap;
 
-use super::{
-    risp_err::RispErr,
-    risp_exp::{parse_list_of_float, RispExp},
-};
+use super::{risp_err::RispErr, risp_exp::RispExp};
 
 #[derive(Clone)]
 pub struct RispEnv {
@@ -42,5 +39,17 @@ impl RispEnv {
 
     pub fn get(&self, key: &String) -> Option<&RispExp> {
         self.data.get(key)
+    }
+}
+
+fn parse_list_of_float(exps: &[RispExp]) -> Result<Vec<f64>, RispErr> {
+    // parse_single_floatでErrが帰ってきた場合はそのままErrを返す
+    exps.iter().map(|x| parse_single_float(x)).collect()
+}
+
+fn parse_single_float(exp: &RispExp) -> Result<f64, RispErr> {
+    match exp {
+        RispExp::Number(num) => Ok(*num),
+        _ => Err(RispErr::Reason("exptected a number".to_string())),
     }
 }
