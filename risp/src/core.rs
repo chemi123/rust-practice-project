@@ -1,6 +1,7 @@
-use std::num::ParseFloatError;
-
-use crate::entity::{RispEnv, RispErr, RispExpr};
+use crate::{
+    entity::{RispEnv, RispErr, RispExpr},
+    utils::parse_atom,
+};
 
 pub fn tokenize(expr: &str) -> Vec<String> {
     expr.replace("(", " ( ")
@@ -11,7 +12,7 @@ pub fn tokenize(expr: &str) -> Vec<String> {
 }
 
 // parseとread_seqが相互に依存しているためあまりよくない
-pub fn parse(tokens: &[String]) -> Result<(RispExpr, &[String]), RispErr> {
+pub fn parse_risp_expressions(tokens: &[String]) -> Result<(RispExpr, &[String]), RispErr> {
     let (token, rest) = tokens
         .split_first()
         .ok_or(RispErr::Reason("could not get tokens".to_string()))?;
@@ -36,17 +37,9 @@ fn read_seq(tokens: &[String]) -> Result<(RispExpr, &[String]), RispErr> {
             return Ok((RispExpr::List(res), rest));
         }
 
-        let (expr, new_xs) = parse(&xs)?;
+        let (expr, new_xs) = parse_risp_expressions(&xs)?;
         res.push(expr);
         xs = new_xs;
-    }
-}
-
-fn parse_atom(token: &str) -> RispExpr {
-    let potential_float: Result<f64, ParseFloatError> = token.parse();
-    match potential_float {
-        Ok(v) => RispExpr::Number(v),
-        Err(_) => RispExpr::Symbol(token.to_string()),
     }
 }
 
@@ -83,6 +76,6 @@ fn eval(expr: &RispExpr, env: &RispEnv) -> Result<RispExpr, RispErr> {
 }
 
 pub fn parse_risp_expr_string(expr: String, env: &RispEnv) -> Result<RispExpr, RispErr> {
-    let (parsed_expr, _) = parse(&tokenize(&expr))?;
+    let (parsed_expr, _) = parse_risp_expressions(&tokenize(&expr))?;
     Ok(eval(&parsed_expr, env)?)
 }

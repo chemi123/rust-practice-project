@@ -1,6 +1,8 @@
 use core::fmt;
 use std::collections::HashMap;
 
+use crate::utils::parse_list_of_float;
+
 #[derive(Clone)]
 pub struct RispEnv {
     data: HashMap<String, RispExpr>,
@@ -38,18 +40,6 @@ impl RispEnv {
 
     pub fn get(&self, key: &String) -> Option<&RispExpr> {
         self.data.get(key)
-    }
-}
-
-fn parse_list_of_float(exprs: &[RispExpr]) -> Result<Vec<f64>, RispErr> {
-    // parse_single_floatでErrが帰ってきた場合はそのままErrを返す
-    exprs.iter().map(|x| parse_single_float(x)).collect()
-}
-
-fn parse_single_float(expr: &RispExpr) -> Result<f64, RispErr> {
-    match expr {
-        RispExpr::Number(num) => Ok(*num),
-        _ => Err(RispErr::Reason("expected a number".to_string())),
     }
 }
 
