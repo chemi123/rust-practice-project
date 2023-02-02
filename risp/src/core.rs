@@ -12,7 +12,7 @@ pub fn tokenize(expr: &str) -> Vec<String> {
 }
 
 // parseとread_seqが相互に依存しているためあまりよくない
-pub fn parse_risp_expressions(tokens: &[String]) -> Result<(RispExpr, &[String]), RispErr> {
+pub fn parse_risp_exprs(tokens: &[String]) -> Result<(RispExpr, &[String]), RispErr> {
     let (token, rest) = tokens
         .split_first()
         .ok_or(RispErr::Reason("could not get tokens".to_string()))?;
@@ -37,7 +37,7 @@ fn read_seq(tokens: &[String]) -> Result<(RispExpr, &[String]), RispErr> {
             return Ok((RispExpr::List(res), rest));
         }
 
-        let (expr, new_xs) = parse_risp_expressions(&xs)?;
+        let (expr, new_xs) = parse_risp_exprs(&xs)?;
         res.push(expr);
         xs = new_xs;
     }
@@ -76,6 +76,6 @@ fn eval(expr: &RispExpr, env: &RispEnv) -> Result<RispExpr, RispErr> {
 }
 
 pub fn parse_risp_expr_string(expr: String, env: &RispEnv) -> Result<RispExpr, RispErr> {
-    let (parsed_expr, _) = parse_risp_expressions(&tokenize(&expr))?;
+    let (parsed_expr, _) = parse_risp_exprs(&tokenize(&expr))?;
     Ok(eval(&parsed_expr, env)?)
 }
