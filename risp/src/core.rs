@@ -1,6 +1,6 @@
 use std::num::ParseFloatError;
 
-use crate::entity::{RispEnv, RispErr, RispExp};
+use crate::entity::{RispEnv, RispErr, RispExpr};
 
 pub fn tokenize(expr: &str) -> Vec<String> {
     expr.replace("(", " ( ")
@@ -11,7 +11,7 @@ pub fn tokenize(expr: &str) -> Vec<String> {
 }
 
 // parseとread_seqが相互に依存しているためあまりよくない
-pub fn parse(tokens: &[String]) -> Result<(RispExp, &[String]), RispErr> {
+pub fn parse(tokens: &[String]) -> Result<(RispExpr, &[String]), RispErr> {
     let (token, rest) = tokens
         .split_first()
         .ok_or(RispErr::Reason("could not get tokens".to_string()))?;
@@ -25,7 +25,7 @@ pub fn parse(tokens: &[String]) -> Result<(RispExp, &[String]), RispErr> {
     }
 }
 
-fn read_seq(tokens: &[String]) -> Result<(RispExp, &[String]), RispErr> {
+fn read_seq(tokens: &[String]) -> Result<(RispExpr, &[String]), RispErr> {
     let mut res = vec![];
     let mut xs = tokens;
     loop {
@@ -33,31 +33,31 @@ fn read_seq(tokens: &[String]) -> Result<(RispExp, &[String]), RispErr> {
             "would not find closing bracket. `)`".to_string(),
         ))?;
         if next_token == ")" {
-            return Ok((RispExp::List(res), rest));
+            return Ok((RispExpr::List(res), rest));
         }
 
-        let (exp, new_xs) = parse(&xs)?;
-        res.push(exp);
+        let (expr, new_xs) = parse(&xs)?;
+        res.push(expr);
         xs = new_xs;
     }
 }
 
-fn parse_atom(token: &str) -> RispExp {
+fn parse_atom(token: &str) -> RispExpr {
     let potential_float: Result<f64, ParseFloatError> = token.parse();
     match potential_float {
-        Ok(v) => RispExp::Number(v),
-        Err(_) => RispExp::Symbol(token.to_string()),
+        Ok(v) => RispExpr::Number(v),
+        Err(_) => RispExpr::Symbol(token.to_string()),
     }
 }
 
-fn eval(exp: &RispExp, env: &RispEnv) -> Result<RispExp, RispErr> {
-    match exp {
-        RispExp::Symbol(symbol) => env
+fn eval(expr: &RispExpr, env: &RispEnv) -> Result<RispExpr, RispErr> {
+    match expr {
+        RispExpr::Symbol(symbol) => env
             .get(symbol)
             .ok_or(RispErr::Reason(format!("unexpected symbol, {}", symbol)))
             .map(|x| x.clone()),
-        RispExp::Number(_) => Ok(exp.clone()),
-        RispExp::List(list) => {
+        RispExpr::Number(_) => Ok(expr.clone()),
+        RispExpr::List(list) => {
             let first_form = list
                 .first()
                 .ok_or(RispErr::Reason("unexpected empty list".to_string()))?;
@@ -67,22 +67,22 @@ fn eval(exp: &RispExp, env: &RispEnv) -> Result<RispExp, RispErr> {
             // function 1 2 3のようなformat(functionは例えばdefault_env()で登録した和算関数)のListで最初が関数でない場合はinvalid formatであるというイメージ
             // 仮にfunction 1 + 2だった場合はparse_float_argsでErr(RispErr)を返す
             match first_eval {
-                RispExp::Func(f) => {
+                RispExpr::Func(f) => {
                     let args_eval = arg_forms
                         .iter()
                         .map(|x| eval(x, env))
-                        .collect::<Result<Vec<RispExp>, RispErr>>();
-                    let risp_exps = &args_eval?;
-                    f(risp_exps)
+                        .collect::<Result<Vec<RispExpr>, RispErr>>();
+                    let risp_exprs = &args_eval?;
+                    f(risp_exprs)
                 }
                 _ => Err(RispErr::Reason("first form must be a function".to_string())),
             }
         }
-        RispExp::Func(_) => Err(RispErr::Reason("unexpected form".to_string())),
+        RispExpr::Func(_) => Err(RispErr::Reason("unexpected form".to_string())),
     }
 }
 
-pub fn parse_risp_exp_string(expr: String, env: &RispEnv) -> Result<RispExp, RispErr> {
-    let (parsed_exp, _) = parse(&tokenize(&expr))?;
-    Ok(eval(&parsed_exp, env)?)
+pub fn parse_risp_expr_string(expr: String, env: &RispEnv) -> Result<RispExpr, RispErr> {
+    let (parsed_expr, _) = parse(&tokenize(&expr))?;
+    Ok(eval(&parsed_expr, env)?)
 }

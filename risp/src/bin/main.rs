@@ -1,11 +1,11 @@
 use std::io::{self, stdout, Write};
 
 use risp::{
-    core::parse_risp_exp_string,
+    core::parse_risp_expr_string,
     entity::{RispEnv, RispErr},
 };
 
-fn slurp_exp_string() -> String {
+fn slurp_expr_string() -> String {
     let mut expr = String::new();
     io::stdin()
         .read_line(&mut expr)
@@ -23,8 +23,8 @@ fn main() {
     loop {
         print!("risp > ");
         stdout().flush().unwrap();
-        let exp_string = slurp_exp_string();
-        match parse_risp_exp_string(exp_string, &env) {
+        let expr_string = slurp_expr_string();
+        match parse_risp_expr_string(expr_string, &env) {
             Ok(res) => println!("{}", res),
             Err(e) => match e {
                 RispErr::Reason(msg) => println!("Error: {}", msg),

@@ -5,13 +5,13 @@ use risp::{
 
 fn main() {
     let tokens = tokenize("( + 1 (- 2 3)) 1 2 3");
-    let (risp_exp, str_vec) = parse(&tokens).unwrap();
-    println!("{}", risp_exp);
+    let (risp_expr, str_vec) = parse(&tokens).unwrap();
+    println!("{}", risp_expr);
     println!("{:?}", str_vec);
     println!();
 
     let tokens = tokenize2("( + 1 (- 2 3)) 1 2 3");
-    let (risp_exp, str_vec) = parse2(tokens).unwrap();
-    println!("{}", risp_exp);
+    let (risp_expr, str_vec) = parse2(tokens).unwrap();
+    println!("{}", risp_expr);
     println!("{:?}", str_vec);
 }
