@@ -1,8 +1,8 @@
 use std::io::{self, stdout, Write};
 
 use risp::{
-    core::engine::parse_risp_exp_string,
-    entity::{risp_env::RispEnv, risp_err::RispErr},
+    core::parse_risp_exp_string,
+    entity::{RispEnv, RispErr},
 };
 
 fn slurp_exp_string() -> String {

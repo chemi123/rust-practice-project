@@ -1,6 +1,6 @@
-use risp::core::{
-    engine::{parse, tokenize},
-    engine2::{parse2, tokenize2},
+use risp::{
+    core::{parse, tokenize},
+    core_2::{parse2, tokenize2},
 };
 
 fn main() {

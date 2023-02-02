@@ -1,6 +1,6 @@
 use std::{collections::VecDeque, num::ParseFloatError};
 
-use crate::entity::{risp_err::RispErr, risp_exp::RispExp};
+use crate::entity::{RispErr, RispExp};
 
 // originalのengineの方は関数が相互依存しているなど気になる点があった. こっちではそれを修正してみる
 
