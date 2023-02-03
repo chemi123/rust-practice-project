@@ -1,7 +1,7 @@
 use core::fmt;
 use std::collections::HashMap;
 
-use crate::utils::parse_list_of_float;
+use crate::{ensure_tonicity, utils::parse_list_of_floats};
 
 #[derive(Clone)]
 pub struct RispEnv {
@@ -15,7 +15,7 @@ impl RispEnv {
         data.insert(
             "+".to_string(),
             RispExpr::Func(|exprs| -> Result<RispExpr, RispErr> {
-                let sum = parse_list_of_float(exprs)?
+                let sum = parse_list_of_floats(exprs)?
                     .iter()
                     .fold(0.0, |sum, a| sum + *a);
                 Ok(RispExpr::Number(sum))
@@ -25,7 +25,7 @@ impl RispEnv {
         data.insert(
             "-".to_string(),
             RispExpr::Func(|exprs| -> Result<RispExpr, RispErr> {
-                let floats = parse_list_of_float(exprs)?;
+                let floats = parse_list_of_floats(exprs)?;
                 let first = floats
                     .first()
                     .ok_or(RispErr::Reason("expected at least one number".to_string()))?;
@@ -33,6 +33,31 @@ impl RispEnv {
 
                 Ok(RispExpr::Number(first - sum_of_rest))
             }),
+        );
+
+        data.insert(
+            "=".to_string(),
+            RispExpr::Func(ensure_tonicity!(|a, b| a == b)),
+        );
+
+        data.insert(
+            ">".to_string(),
+            RispExpr::Func(ensure_tonicity!(|a, b| a > b)),
+        );
+
+        data.insert(
+            ">=".to_string(),
+            RispExpr::Func(ensure_tonicity!(|a, b| a >= b)),
+        );
+
+        data.insert(
+            "<".to_string(),
+            RispExpr::Func(ensure_tonicity!(|a, b| a < b)),
+        );
+
+        data.insert(
+            "<=".to_string(),
+            RispExpr::Func(ensure_tonicity!(|a, b| a <= b)),
         );
 
         RispEnv { data }
@@ -50,6 +75,7 @@ pub enum RispErr {
 
 #[derive(Clone)]
 pub enum RispExpr {
+    Bool(bool),
     Symbol(String),
     Number(f64),
     List(Vec<RispExpr>),
@@ -59,6 +85,7 @@ pub enum RispExpr {
 impl fmt::Display for RispExpr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let str = match self {
+            RispExpr::Bool(a) => a.to_string(),
             RispExpr::Symbol(s) => s.clone(),
             RispExpr::Number(n) => n.to_string(),
             RispExpr::List(list) => {

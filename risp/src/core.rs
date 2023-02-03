@@ -45,6 +45,7 @@ fn read_seq(tokens: &[String]) -> Result<(RispExpr, &[String]), RispErr> {
 
 fn eval(expr: &RispExpr, env: &RispEnv) -> Result<RispExpr, RispErr> {
     match expr {
+        RispExpr::Bool(_) => Ok(expr.clone()),
         RispExpr::Symbol(symbol) => env
             .get(symbol)
             .ok_or(RispErr::Reason(format!("unexpected symbol, {}", symbol)))
