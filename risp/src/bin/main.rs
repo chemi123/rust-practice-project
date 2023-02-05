@@ -19,12 +19,12 @@ fn main() {
         risp.run();
     */
 
-    let env = RispEnv::new();
+    let mut env = RispEnv::new();
     loop {
         print!("risp > ");
         stdout().flush().unwrap();
         let expr_string = slurp_expr_string();
-        match parse_risp_expr_string(expr_string, &env) {
+        match parse_risp_expr_string(expr_string, &mut env) {
             Ok(res) => println!("{}", res),
             Err(e) => match e {
                 RispErr::Reason(msg) => println!("Error: {}", msg),

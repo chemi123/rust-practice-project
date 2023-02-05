@@ -5,7 +5,7 @@ use crate::{ensure_tonicity, utils::parse_list_of_floats};
 
 #[derive(Clone)]
 pub struct RispEnv {
-    data: HashMap<String, RispExpr>,
+    pub data: HashMap<String, RispExpr>,
 }
 
 impl RispEnv {
