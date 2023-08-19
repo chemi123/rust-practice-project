@@ -1,2 +1,2 @@
 # lisp-rs
-ihttps://vishpat.github.io/lisp-rs/
+https://vishpat.github.io/lisp-rs/
