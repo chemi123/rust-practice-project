@@ -1,3 +1,6 @@
-fn main() {
-    println!("Hello, world!");
-}
+use lexer::Token;
+
+mod lexer;
+mod parser;
+
+fn main() {}
