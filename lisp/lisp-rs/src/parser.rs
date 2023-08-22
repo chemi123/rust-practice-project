@@ -3,7 +3,7 @@ use std::error::Error;
 
 use crate::lexer::Token;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Object {
     Void,
     Integer(i64),

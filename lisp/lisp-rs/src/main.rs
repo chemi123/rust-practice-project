@@ -1,5 +1,7 @@
 use lexer::Token;
 
+mod env;
+mod eval;
 mod lexer;
 mod parser;
 
