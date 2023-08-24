@@ -1,5 +1,5 @@
 use core::fmt;
-use std::{error::Error, fmt::Formatter};
+use std::fmt::Formatter;
 
 use anyhow::Result;
 

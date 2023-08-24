@@ -1,5 +1,4 @@
 use core::fmt;
-use std::error::Error;
 
 use anyhow::{Result, anyhow};
 
@@ -47,30 +46,9 @@ impl fmt::Display for Object {
     }
 }
 
-#[derive(Debug)]
-pub struct ParseError {
-    err: String,
-}
-
-impl fmt::Display for ParseError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Parse error: {}", self.err)
-    }
-}
-
-impl Error for ParseError {}
-
-impl ParseError {
-    pub fn new(message: &str) -> Self {
-        ParseError {
-            err: message.to_string(),
-        }
-    }
-}
-
 pub fn parse_tokens(tokens: &mut Vec<Token>) -> Result<Object> {
     tokens.reverse();
-    let first_token = tokens.pop().ok_or(ParseError::new("empty tokens"))?;
+    let first_token = tokens.pop().ok_or(anyhow!("empty tokens"))?;
     if first_token != Token::LParen {
         return Err(anyhow!("tokens must start with left parenthesis"))
     }
