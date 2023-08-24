@@ -1,4 +1,4 @@
-use std::{cell::RefCell, fmt::format, rc::Rc};
+use std::{cell::RefCell, rc::Rc};
 
 use crate::{env::Env, parser::Object};
 
