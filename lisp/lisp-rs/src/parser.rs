@@ -1,6 +1,6 @@
 use core::fmt;
 
-use anyhow::{Result, anyhow};
+use anyhow::{Result, anyhow, bail};
 
 use crate::lexer::Token;
 
@@ -50,7 +50,7 @@ pub fn parse_tokens(tokens: &mut Vec<Token>) -> Result<Object> {
     tokens.reverse();
     let first_token = tokens.pop().ok_or(anyhow!("empty tokens"))?;
     if first_token != Token::LParen {
-        return Err(anyhow!("tokens must start with left parenthesis"))
+        bail!("tokens must start with left parenthesis")
     }
 
     parse_tokens_inner(tokens)
@@ -69,7 +69,7 @@ fn parse_tokens_inner(tokens: &mut Vec<Token>) -> Result<Object> {
     }
 
     // ここに来る時点で最後のトークンが")"になっていないため不正
-    Err(anyhow!("given an invalid expression"))
+    bail!("given an invalid expression")
 }
 
 #[cfg(test)]
