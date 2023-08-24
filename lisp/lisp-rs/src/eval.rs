@@ -1,8 +1,10 @@
 use std::{cell::RefCell, rc::Rc};
 
+use anyhow::{Result, anyhow};
+
 use crate::{env::Env, parser::Object};
 
-pub fn eval_obj(object: &Object, env: &mut Rc<RefCell<Env>>) -> Result<Object, String> {
+pub fn eval_obj(object: &Object, env: &mut Rc<RefCell<Env>>) -> Result<Object> {
     match object {
         Object::Void => Ok(Object::Void),
         Object::Lambda(_, _) => Ok(Object::Void),
@@ -13,15 +15,15 @@ pub fn eval_obj(object: &Object, env: &mut Rc<RefCell<Env>>) -> Result<Object, S
     }
 }
 
-fn eval_symbol(s: &str, env: &mut Rc<RefCell<Env>>) -> Result<Object, String> {
+fn eval_symbol(s: &str, env: &mut Rc<RefCell<Env>>) -> Result<Object> {
     let val = env.borrow().get(s);
     if val.is_none() {
-        return Err(format!("Unbound symbol: {}", s));
+        return Err(anyhow!("Unbound symbol: {}", s))
     }
     Ok(val.unwrap().clone())
 }
 
-fn eval_list(list: &Vec<Object>, env: &mut Rc<RefCell<Env>>) -> Result<Object, String> {
+fn eval_list(list: &Vec<Object>, env: &mut Rc<RefCell<Env>>) -> Result<Object> {
     let head = &list[0];
     match head {
         Object::Symbol(s) => match s.as_ref() {
@@ -45,21 +47,21 @@ fn eval_list(list: &Vec<Object>, env: &mut Rc<RefCell<Env>>) -> Result<Object, S
     }
 }
 
-fn eval_binary_operator(list: &Vec<Object>, env: &mut Rc<RefCell<Env>>) -> Result<Object, String> {
+fn eval_binary_operator(list: &Vec<Object>, env: &mut Rc<RefCell<Env>>) -> Result<Object> {
     if list.len() != 3 {
-        return Err(format!("Invalid number of arguments for binary operator"));
+        return Err(anyhow!("Invalid number of arguments for binary operator"));
     }
 
     let left = eval_obj(&list[1], env)?;
     let left = match left {
         Object::Integer(n) => n,
-        _ => return Err(format!("Left operand must be an integer")),
+        _ => return Err(anyhow!("Left operand must be an integer")),
     };
 
     let right = eval_obj(&list[2], env)?;
     let right = match right {
         Object::Integer(n) => n,
-        _ => return Err(format!("Right operand must be an integer")),
+        _ => return Err(anyhow!("Right operand must be an integer")),
     };
 
     let operator = &list[0];
@@ -73,21 +75,21 @@ fn eval_binary_operator(list: &Vec<Object>, env: &mut Rc<RefCell<Env>>) -> Resul
             ">" => Ok(Object::Bool(left > right)),
             "=" => Ok(Object::Bool(left == right)),
             "!=" => Ok(Object::Bool(left != right)),
-            _ => Err(format!("Invalid operator: {}", s)),
+            _ => Err(anyhow!("Invalid operator: {}", s)),
         },
-        _ => Err(format!("Operator must be a symbol")),
+        _ => Err(anyhow!("Operator must be a symbol")),
     }
 }
 
-fn eval_if(list: &Vec<Object>, env: &mut Rc<RefCell<Env>>) -> Result<Object, String> {
+fn eval_if(list: &Vec<Object>, env: &mut Rc<RefCell<Env>>) -> Result<Object> {
     if list.len() != 4 {
-        return Err(format!("Invalid number of arguments for if statement"));
+        return Err(anyhow!("Invalid number of arguments for if statement"));
     }
 
     let condition = eval_obj(&list[1], env)?;
     let condition = match condition {
         Object::Bool(b) => b,
-        _ => return Err(format!("Condition must be a boolean")),
+        _ => return Err(anyhow!("Condition must be a boolean")),
     };
 
     if condition {
@@ -97,14 +99,14 @@ fn eval_if(list: &Vec<Object>, env: &mut Rc<RefCell<Env>>) -> Result<Object, Str
     }
 }
 
-fn eval_define(list: &Vec<Object>, env: &mut Rc<RefCell<Env>>) -> Result<Object, String> {
+fn eval_define(list: &Vec<Object>, env: &mut Rc<RefCell<Env>>) -> Result<Object> {
     if list.len() != 3 {
-        return Err(format!("Invalid number of arguments for define"));
+        return Err(anyhow!("Invalid number of arguments for define"));
     }
 
     let var = match &list[1] {
         Object::Symbol(s) => s.clone(),
-        _ => return Err(format!("Invalid define")),
+        _ => return Err(anyhow!("Invalid define")),
     };
 
     let obj = eval_obj(&list[2], env)?;
@@ -112,9 +114,9 @@ fn eval_define(list: &Vec<Object>, env: &mut Rc<RefCell<Env>>) -> Result<Object,
     Ok(Object::Void)
 }
 
-fn eval_function_definition(list: &Vec<Object>) -> Result<Object, String> {
+fn eval_function_definition(list: &Vec<Object>) -> Result<Object> {
     if list.len() != 3 {
-        return Err(format!("Invalid number of arguments for lambda"));
+        return Err(anyhow!("Invalid number of arguments for lambda"));
     }
 
     let params = match &list[1] {
@@ -123,17 +125,17 @@ fn eval_function_definition(list: &Vec<Object>) -> Result<Object, String> {
             for obj in list {
                 match obj {
                     Object::Symbol(s) => args.push(s.clone()),
-                    _ => return Err(format!("Invalid lambda argument")),
+                    _ => return Err(anyhow!("Invalid lambda argument")),
                 }
             }
             args
         }
-        _ => return Err(format!("Invalid lambda")),
+        _ => return Err(anyhow!("Invalid lambda")),
     };
 
     let body = match &list[2] {
         Object::List(list) => list.clone(),
-        _ => return Err(format!("Invalid lambda")),
+        _ => return Err(anyhow!("Invalid lambda")),
     };
 
     Ok(Object::Lambda(params, body))
@@ -143,10 +145,10 @@ fn eval_function_call(
     key: &str,
     list: &Vec<Object>,
     env: &mut Rc<RefCell<Env>>,
-) -> Result<Object, String> {
+) -> Result<Object> {
     let lambda = env.borrow().get(key);
     if lambda.is_none() {
-        return Err(format!("Unbound symbol: {}", key));
+        return Err(anyhow!("Unbound symbol: {}", key));
     }
 
     let func = lambda.unwrap();
@@ -159,7 +161,7 @@ fn eval_function_call(
             }
             eval_obj(&Object::List(body), &mut new_env)
         }
-        _ => Err(format!("Not a lambda: {}", key)),
+        _ => Err(anyhow!("Not a lambda: {}", key)),
     }
 }
 

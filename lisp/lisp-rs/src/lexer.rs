@@ -1,6 +1,8 @@
 use core::fmt;
 use std::{error::Error, fmt::Formatter};
 
+use anyhow::Result;
+
 #[derive(Debug, PartialEq)]
 pub enum Token {
     Integer(i64),
@@ -20,20 +22,7 @@ impl fmt::Display for Token {
     }
 }
 
-#[derive(Debug)]
-pub struct TokenError {
-    ch: char,
-}
-
-impl Error for TokenError {}
-
-impl fmt::Display for TokenError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "unexpected character: {}", self.ch)
-    }
-}
-
-pub fn tokenize(expr: &str) -> Result<Vec<Token>, TokenError> {
+pub fn tokenize(expr: &str) -> Result<Vec<Token>> {
     let words: Vec<_> = expr
         .replace("(", " ( ")
         .replace(")", " ) ")

@@ -1,6 +1,8 @@
 use core::fmt;
 use std::error::Error;
 
+use anyhow::{Result, anyhow};
+
 use crate::lexer::Token;
 
 #[derive(Debug, PartialEq, Clone)]
@@ -66,17 +68,17 @@ impl ParseError {
     }
 }
 
-pub fn parse_tokens(tokens: &mut Vec<Token>) -> Result<Object, ParseError> {
+pub fn parse_tokens(tokens: &mut Vec<Token>) -> Result<Object> {
     tokens.reverse();
     let first_token = tokens.pop().ok_or(ParseError::new("empty tokens"))?;
     if first_token != Token::LParen {
-        return Err(ParseError::new("tokens must start with left parenthesis"));
+        return Err(anyhow!("tokens must start with left parenthesis"))
     }
 
     parse_tokens_inner(tokens)
 }
 
-fn parse_tokens_inner(tokens: &mut Vec<Token>) -> Result<Object, ParseError> {
+fn parse_tokens_inner(tokens: &mut Vec<Token>) -> Result<Object> {
     let mut objects: Vec<Object> = Vec::new();
     while !tokens.is_empty() {
         let token = tokens.pop().unwrap();
@@ -89,7 +91,7 @@ fn parse_tokens_inner(tokens: &mut Vec<Token>) -> Result<Object, ParseError> {
     }
 
     // ここに来る時点で最後のトークンが")"になっていないため不正
-    Err(ParseError::new("given an invalid expression"))
+    Err(anyhow!("given an invalid expression"))
 }
 
 #[cfg(test)]

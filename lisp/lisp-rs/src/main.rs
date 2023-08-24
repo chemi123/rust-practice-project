@@ -1,5 +1,6 @@
-use std::{rc::Rc, cell::RefCell, error::Error};
+use std::{rc::Rc, cell::RefCell};
 
+use anyhow::Result;
 use env::Env;
 use linefeed::{Interface, ReadResult};
 
@@ -12,7 +13,7 @@ mod parser;
 
 const PROMPT: &str = "lisp-rs> ";
 
-fn main() -> Result<(), Box<dyn Error>> {
+fn main() -> Result<()> {
     let reader = Interface::new(PROMPT).unwrap();
     let mut env = Rc::new(RefCell::new(Env::new()));
 
