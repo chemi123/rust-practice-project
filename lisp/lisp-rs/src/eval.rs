@@ -167,8 +167,6 @@ fn eval_function_call(
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     #[test]
     fn test_simple_add() {}
 }
