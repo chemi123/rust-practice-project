@@ -7,25 +7,26 @@ pub fn parse(tokens: Vec<Token>) -> Result<LispExpr> {
         bail!("Empty tokens")
     }
 
-    let mut token_iter = tokens.into_iter();
-    let head = token_iter.next().unwrap();
-
-    if head != Token::LParen {
-        bail!("Expression must start with left parenthesis")
-    }
-
-    parse_inner(&mut token_iter)
+    let mut token_iter = tokens.into_iter().peekable();
+    parse_list(&mut token_iter)
 }
 
-fn parse_inner(token_iter: &mut std::vec::IntoIter<Token>) -> Result<LispExpr> {
+fn parse_list(token_iter: &mut std::iter::Peekable<std::vec::IntoIter<Token>>) -> Result<LispExpr> {
+    let head = token_iter.next().unwrap();
+    match head {
+        Token::LParen => (),
+        _ => bail!("Expression must start with left parenthesis")
+    }
+
     let mut lisp_exprs = Vec::new();
-    while let Some(token) = token_iter.next() {
+    while let Some(token) = token_iter.peek() {
         match token {
-            Token::Integer(n) => lisp_exprs.push(LispExpr::Integer(n)),
-            Token::Symbol(s) => lisp_exprs.push(LispExpr::Symbol(s)),
-            Token::LParen => lisp_exprs.push(parse_inner(token_iter)?),
+            Token::Integer(n) => lisp_exprs.push(LispExpr::Integer(*n)),
+            Token::Symbol(s) => lisp_exprs.push(LispExpr::Symbol(s.clone())),
+            Token::LParen => lisp_exprs.push(parse_list(token_iter)?),
             Token::RParen => return Ok(LispExpr::List(lisp_exprs)),
         }
+        token_iter.next();
     }
 
     bail!("Right parenthesis is missing")
