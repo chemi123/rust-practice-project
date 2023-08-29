@@ -34,13 +34,6 @@ pub fn tokenize(expr_str: &str) -> Result<Vec<Token>> {
 mod tests {
     use super::*;
 
-    // #[test]
-    // fn test_tokenize_fail() {
-    //     let expr = "+ 1 1";
-    //     let tokens = tokenize(expr);
-    //     assert!(tokens.is_err());
-    // }
-
     #[test]
     fn test_tokenize() {
         let expr = "
