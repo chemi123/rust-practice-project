@@ -2,19 +2,16 @@ use anyhow::{Result, bail};
 
 use crate::token::Token;
 
-// tokenizeに渡ってくる引数として空文字列及び空白のみから成る文字列は除外している前提のため、ここではこれらのバリデーションは行わない
 pub fn tokenize(expr_str: &str) -> Result<Vec<Token>> {
+    if expr_str.trim().is_empty() {
+        bail!("Empty expression");
+    }
+
     let characters = expr_str.replace("(", " ( ")
         .replace(")", " ) ")
         .split_whitespace()
         .map(|token| token.to_string())
         .collect::<Vec<_>>();
-
-    let mut peekable_tokens = characters.iter().peekable();
-    let head = peekable_tokens.peek();
-    if !head.unwrap().to_string().eq("(") {
-        bail!("Expression must start with left parenthesis")
-    }
 
     let tokens = characters.iter()
         .map(|character| {
@@ -37,30 +34,15 @@ pub fn tokenize(expr_str: &str) -> Result<Vec<Token>> {
 mod tests {
     use super::*;
 
-    #[test]
-    fn test_tokenize_fail() {
-        let expr = "+ 1 1";
-        let tokens = tokenize(expr);
-        assert!(tokens.is_err());
-    }
+    // #[test]
+    // fn test_tokenize_fail() {
+    //     let expr = "+ 1 1";
+    //     let tokens = tokenize(expr);
+    //     assert!(tokens.is_err());
+    // }
 
     #[test]
     fn test_tokenize() {
-        let expr = "(define r 10)";
-        let tokens = tokenize(expr).unwrap();
-        assert_eq!(tokens,
-            vec![
-                Token::LParen,
-                Token::Symbol(String::from("define")),
-                Token::Symbol(String::from("r")),
-                Token::Integer(10),
-                Token::RParen,
-            ],
-        );
-    }
-
-    #[test]
-    fn test_area_of_a_circle() {
         let expr = "
         (
             (define r 10)
