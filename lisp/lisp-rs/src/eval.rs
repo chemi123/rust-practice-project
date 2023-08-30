@@ -40,15 +40,18 @@ fn eval_list(lisp_exprs: &Vec<LispExpr>, env: &mut Rc<RefCell<Env>>) -> Result<L
             _ => eval_function_call(s, lisp_exprs, env),
         },
         _ => {
-            let mut result = Vec::new();
-            for lisp_expr in lisp_exprs {
+            let result: Result<_, anyhow::Error> = lisp_exprs.iter().try_fold(Vec::new(), |mut acc, lisp_expr| {
                 let evaluated_lisp_expr = eval_lispexpr(lisp_expr, env)?;
                 match evaluated_lisp_expr {
-                    LispExpr::Void => (),
-                    _ => result.push(evaluated_lisp_expr),
+                    LispExpr::Void => Ok(acc),
+                    _ => {
+                        acc.push(evaluated_lisp_expr);
+                        Ok(acc)
+                    },
                 }
-            }
-            Ok(LispExpr::List(result))
+            });
+
+            Ok(LispExpr::List(result?))
         },
     }
 }
@@ -131,14 +134,16 @@ fn eval_function_definition(lisp_exprs: &Vec<LispExpr>) -> Result<LispExpr> {
 
     let params = match &lisp_exprs[1] {
         LispExpr::List(list) => {
-            let mut params = Vec::new();
-            for lisp_expr in list {
+            let params = list.iter().try_fold(Vec::new(), |mut acc, lisp_expr| {
                 match lisp_expr {
-                    LispExpr::Symbol(s) => params.push(s.clone()),
-                    _ => bail!("Parameter must be a symbol"),
+                    LispExpr::Symbol(s) => {
+                        acc.push(s.clone());
+                        Ok(acc)
+                    }
+                    _ => bail!("Parameter must be a symbol")
                 }
-            }
-            params
+            });
+            params?
         },
         _ => bail!("Parameters must be a list"),
     };
