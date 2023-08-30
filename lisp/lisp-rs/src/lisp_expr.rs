@@ -4,6 +4,7 @@ use std::fmt::Display;
 pub enum LispExpr {
     Void,
     Integer(i64),
+    Bool(bool),
     Symbol(String),
     Lambda(Vec<String>, Vec<LispExpr>),
     List(Vec<LispExpr>),
@@ -14,6 +15,7 @@ impl Display for LispExpr {
         match self {
             LispExpr::Void => Ok(()),
             LispExpr::Integer(n) => write!(f, "{}", n),
+            LispExpr::Bool(b) => write!(f, "{}", b),
             LispExpr::Symbol(s) => write!(f, "{}", s),
             LispExpr::Lambda(params, lisp_exprs) => {
                 let lisp_exprs_string = lisp_exprs.iter()

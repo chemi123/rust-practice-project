@@ -2,6 +2,7 @@ use std::{rc::Rc, cell::RefCell, collections::HashMap};
 
 use crate::lisp_expr::LispExpr;
 
+#[derive(Debug, Default, PartialEq)]
 pub struct Env {
     parent: Option<Rc<RefCell<Env>>>,
     vars: HashMap<String, LispExpr>,
@@ -15,7 +16,7 @@ impl Env {
         }
     }
 
-    pub fn extend(parent: Rc<RefCell<Env>>) -> Self {
+    pub fn extend(parent: Rc<RefCell<Self>>) -> Self {
         Env {
             parent: Some(parent),
             vars: HashMap::new(),
