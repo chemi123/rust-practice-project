@@ -1,3 +1,4 @@
 target/
 .vscode/
+.lisp-rs-history
 Cargo.lock

@@ -1,50 +1,32 @@
-use core::fmt;
-use std::fmt::Formatter;
+use anyhow::{Result, bail};
 
-use anyhow::Result;
+use crate::token::Token;
 
-#[derive(Debug, PartialEq)]
-pub enum Token {
-    Integer(i64),
-    Symbol(String),
-    LParen,
-    RParen,
-}
-
-impl fmt::Display for Token {
-    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        match self {
-            Token::Integer(n) => write!(f, "{}", n),
-            Token::Symbol(s) => write!(f, "{}", s),
-            Token::LParen => write!(f, "("),
-            Token::RParen => write!(f, ")"),
-        }
+pub fn tokenize(expr_str: &str) -> Result<Vec<Token>> {
+    if expr_str.trim().is_empty() {
+        bail!("Empty expression");
     }
-}
 
-pub fn tokenize(expr: &str) -> Result<Vec<Token>> {
-    let words: Vec<_> = expr
-        .replace("(", " ( ")
+    let characters = expr_str.replace("(", " ( ")
         .replace(")", " ) ")
         .split_whitespace()
-        .map(|x| x.to_string())
-        .collect();
+        .map(|token| token.to_string())
+        .collect::<Vec<_>>();
 
-    let mut tokens = Vec::with_capacity(words.len());
-    for word in words {
-        match word.as_str() {
-            "(" => tokens.push(Token::LParen),
-            ")" => tokens.push(Token::RParen),
-            _ => {
-                let i = word.parse::<i64>();
-                if i.is_ok() {
-                    tokens.push(Token::Integer(i.unwrap()));
-                } else {
-                    tokens.push(Token::Symbol(word));
+    let tokens = characters.iter()
+        .map(|character| {
+            match character.as_str() {
+                "(" => Token::LParen,
+                ")" => Token::RParen,
+                _ => {
+                    if let Some(n) = character.parse::<i64>().ok() {
+                        Token::Integer(n)
+                    } else {
+                        Token::Symbol(character.clone())
+                    }
                 }
             }
-        }
-    }
+        }).collect::<Vec<_>>();
     Ok(tokens)
 }
 
@@ -53,22 +35,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_add() {
-        let tokens = tokenize("(+ 1 2)").unwrap_or(vec![]);
-        assert_eq!(
-            tokens,
-            vec![
-                Token::LParen,
-                Token::Symbol("+".to_string()),
-                Token::Integer(1),
-                Token::Integer(2),
-                Token::RParen,
-            ]
-        );
-    }
-
-    #[test]
-    fn test_area_of_a_circle() {
+    fn test_tokenize() {
         let expr = "
         (
             (define r 10)

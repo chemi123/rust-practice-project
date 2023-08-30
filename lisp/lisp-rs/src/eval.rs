@@ -1,172 +1,176 @@
-use std::{cell::RefCell, rc::Rc};
+use std::{rc::Rc, cell::RefCell};
 
 use anyhow::{Result, bail};
 
-use crate::{env::Env, parser::Object};
+use crate::{lisp_expr::LispExpr, env::Env, lexer::tokenize, parser::parse};
 
-pub fn eval_obj(object: &Object, env: &mut Rc<RefCell<Env>>) -> Result<Object> {
-    match object {
-        Object::Void => Ok(Object::Void),
-        Object::Lambda(_, _) => Ok(Object::Void),
-        Object::Bool(b) => Ok(Object::Bool(*b)),
-        Object::Integer(i) => Ok(Object::Integer(*i)),
-        Object::Symbol(s) => eval_symbol(s, env),
-        Object::List(list) => eval_list(list, env),
+pub fn eval_str(expr_str: &str, env: &mut Rc<RefCell<Env>>) -> Result<LispExpr> {
+    let tokens = tokenize(expr_str)?;
+    let lisp_expr = parse(tokens)?;
+    eval_lispexpr(&lisp_expr, env)
+}
+
+fn eval_lispexpr(lisp_expr: &LispExpr, env: &mut Rc<RefCell<Env>>) -> Result<LispExpr> {
+    match lisp_expr {
+        LispExpr::Void => Ok(LispExpr::Void),
+        LispExpr::Lambda(_, _) => Ok(LispExpr::Void),
+        LispExpr::Integer(n) => Ok(LispExpr::Integer(*n)),
+        LispExpr::Bool(b) => Ok(LispExpr::Bool(*b)),
+        LispExpr::Symbol(s) => eval_symbol(s, env),
+        LispExpr::List(list) => eval_list(list, env),
     }
 }
 
-fn eval_symbol(s: &str, env: &mut Rc<RefCell<Env>>) -> Result<Object> {
-    let val = env.borrow().get(s);
+fn eval_symbol(symbol: &str, env: &mut Rc<RefCell<Env>>) -> Result<LispExpr> {
+    let val = env.borrow().get(symbol);
     if val.is_none() {
-        bail!("Unbound symbol: {}", s)
+        bail!("Unbound symbol: {}", symbol)
     }
-    Ok(val.unwrap().clone())
+    Ok(val.unwrap())
 }
 
-fn eval_list(list: &Vec<Object>, env: &mut Rc<RefCell<Env>>) -> Result<Object> {
-    let head = &list[0];
+fn eval_list(lisp_exprs: &Vec<LispExpr>, env: &mut Rc<RefCell<Env>>) -> Result<LispExpr> {
+    let head = &lisp_exprs[0];
     match head {
-        Object::Symbol(s) => match s.as_ref() {
-            "+" | "-" | "*" | "/" | "<" | ">" | "=" | "!=" => eval_binary_operator(list, env),
-            "if" => eval_if(list, env),
-            "define" => eval_define(list, env),
-            "lambda" => eval_function_definition(list),
-            _ => eval_function_call(s.as_str(), list, env),
+        LispExpr::Symbol(s) => match s.as_str() {
+            "+" | "-" | "*" | "/" | "<" | ">" | "=" | "!=" => eval_binary_operator(lisp_exprs, env),
+            "define" => eval_define(lisp_exprs, env),
+            "if" => eval_if(lisp_exprs, env),
+            "lambda" => eval_function_definition(lisp_exprs),
+            _ => eval_function_call(s, lisp_exprs, env),
         },
         _ => {
-            let mut new_list = Vec::new();
-            for obj in list {
-                let result = eval_obj(obj, env)?;
-                match result {
-                    Object::Void => (),
-                    _ => new_list.push(result),
+            let mut result = Vec::new();
+            for lisp_expr in lisp_exprs {
+                let evaluated_lisp_expr = eval_lispexpr(lisp_expr, env)?;
+                match evaluated_lisp_expr {
+                    LispExpr::Void => (),
+                    _ => result.push(evaluated_lisp_expr),
                 }
             }
-            Ok(Object::List(new_list))
-        }
-    }
-}
-
-fn eval_binary_operator(list: &Vec<Object>, env: &mut Rc<RefCell<Env>>) -> Result<Object> {
-    if list.len() != 3 {
-        bail!("Invalid number of arguments for binary operator");
-    }
-
-    let left = eval_obj(&list[1], env)?;
-    let left = match left {
-        Object::Integer(n) => n,
-        _ => bail!("Left operand must be an integer"),
-    };
-
-    let right = eval_obj(&list[2], env)?;
-    let right = match right {
-        Object::Integer(n) => n,
-        _ => bail!("Right operand must be an integer"),
-    };
-
-    let operator = &list[0];
-    match operator {
-        Object::Symbol(s) => match s.as_str() {
-            "+" => Ok(Object::Integer(left + right)),
-            "-" => Ok(Object::Integer(left - right)),
-            "*" => Ok(Object::Integer(left * right)),
-            "/" => Ok(Object::Integer(left / right)),
-            "<" => Ok(Object::Bool(left < right)),
-            ">" => Ok(Object::Bool(left > right)),
-            "=" => Ok(Object::Bool(left == right)),
-            "!=" => Ok(Object::Bool(left != right)),
-            _ => bail!("Invalid operator: {}", s),
+            Ok(LispExpr::List(result))
         },
-        _ => bail!("Operator must be a symbol"),
     }
 }
 
-fn eval_if(list: &Vec<Object>, env: &mut Rc<RefCell<Env>>) -> Result<Object> {
-    if list.len() != 4 {
-        bail!("Invalid number of arguments for if statement");
+fn eval_binary_operator(lisp_exprs: &Vec<LispExpr>, env: &mut Rc<RefCell<Env>>) -> Result<LispExpr> {
+    if lisp_exprs.len() != 3 {
+        bail!("Invalid number of arguments for binary operator")
     }
 
-    let condition = eval_obj(&list[1], env)?;
+    let left = eval_lispexpr(&lisp_exprs[1], env)?;
+    let left = match left {
+        LispExpr::Integer(n) => n,
+        _ => bail!("Left operand must be a number")
+    };
+
+    let right = eval_lispexpr(&lisp_exprs[2], env)?;
+    let right = match right {
+        LispExpr::Integer(n) => n,
+        _ => bail!("Left operand must be a number")
+    };
+
+    let result = match &lisp_exprs[0] {
+        LispExpr::Symbol(operator) => match operator.as_str() {
+            "+" => LispExpr::Integer(left + right),
+            "-" => LispExpr::Integer(left - right),
+            "*" => LispExpr::Integer(left * right),
+            "/" => LispExpr::Integer(left / right),
+            ">" => LispExpr::Bool(left > right),
+            "<" => LispExpr::Bool(left < right),
+            "=" => LispExpr::Bool(left == right),
+            "!=" => LispExpr::Bool(left != right),
+            _ => bail!("Invalid operator"),
+        }
+        _ => bail!("Invalid operator"),
+    };
+
+    Ok(result)
+}
+
+fn eval_define(lisp_exprs: &Vec<LispExpr>, env: &mut Rc<RefCell<Env>>) -> Result<LispExpr> {
+    if lisp_exprs.len() != 3 {
+        bail!("Invalid number of arguments for define")
+    }
+
+    let val = eval_lispexpr(&lisp_exprs[2], env)?;
+    if let LispExpr::Void = val {
+        bail!("Unable to assign Void to a variable")
+    }
+
+    match &lisp_exprs[1] {
+        LispExpr::Symbol(s) => env.borrow_mut().set(s, val),
+        _ => bail!("Invalid define")
+    }
+
+    Ok(LispExpr::Void)
+}
+
+fn eval_if(lisp_exprs: &Vec<LispExpr>, env: &mut Rc<RefCell<Env>>) -> Result<LispExpr> {
+    if lisp_exprs.len() != 4 {
+        bail!("Invalid number of arguments for if")
+    }
+
+    let condition = eval_lispexpr(&lisp_exprs[1], env)?;
     let condition = match condition {
-        Object::Bool(b) => b,
-        _ => bail!("Condition must be a boolean"),
+        LispExpr::Bool(b) => b,
+        _ => bail!("Operand after if must be a Bool"),
     };
 
     if condition {
-        eval_obj(&list[2], env)
+        eval_lispexpr(&lisp_exprs[2], env)
     } else {
-        eval_obj(&list[3], env)
+        eval_lispexpr(&lisp_exprs[3], env)
     }
 }
 
-fn eval_define(list: &Vec<Object>, env: &mut Rc<RefCell<Env>>) -> Result<Object> {
-    if list.len() != 3 {
-        bail!("Invalid number of arguments for define");
+fn eval_function_definition(lisp_exprs: &Vec<LispExpr>) -> Result<LispExpr> {
+    if lisp_exprs.len() != 3 {
+        bail!("Invalid number of arguments for lambda")
     }
 
-    let var = match &list[1] {
-        Object::Symbol(s) => s.clone(),
-        _ => bail!("Invalid define"),
-    };
-
-    let obj = eval_obj(&list[2], env)?;
-    env.borrow_mut().set(var.as_str(), obj);
-    Ok(Object::Void)
-}
-
-fn eval_function_definition(list: &Vec<Object>) -> Result<Object> {
-    if list.len() != 3 {
-        bail!("Invalid number of arguments for lambda");
-    }
-
-    let params = match &list[1] {
-        Object::List(list) => {
-            let mut args = Vec::new();
-            for obj in list {
-                match obj {
-                    Object::Symbol(s) => args.push(s.clone()),
-                    _ => bail!("Invalid lambda argument"),
+    let params = match &lisp_exprs[1] {
+        LispExpr::List(list) => {
+            let mut params = Vec::new();
+            for lisp_expr in list {
+                match lisp_expr {
+                    LispExpr::Symbol(s) => params.push(s.clone()),
+                    _ => bail!("Parameter must be a symbol"),
                 }
             }
-            args
-        }
-        _ => bail!("Invalid lambda"),
+            params
+        },
+        _ => bail!("Parameters must be a list"),
     };
 
-    let body = match &list[2] {
-        Object::List(list) => list.clone(),
-        _ => bail!("Invalid lambda"),
-    };
-
-    Ok(Object::Lambda(params, body))
+    match &lisp_exprs[2] {
+        LispExpr::List(list) => Ok(LispExpr::Lambda(params, list.clone())),
+        _ => bail!("Body must be a list"),
+    }
 }
 
-fn eval_function_call(
-    key: &str,
-    list: &Vec<Object>,
-    env: &mut Rc<RefCell<Env>>,
-) -> Result<Object> {
-    let lambda = env.borrow().get(key);
+fn eval_function_call(symbol: &str, lisp_exprs: &Vec<LispExpr>, env: &mut Rc<RefCell<Env>>) -> Result<LispExpr> {
+    let lambda = env.borrow().get(symbol);
     if lambda.is_none() {
-        bail!("Unbound symbol: {}", key);
+        bail!("Unbound symbol: {}", symbol)
     }
 
-    let func = lambda.unwrap();
-    match func {
-        Object::Lambda(params, body) => {
+    let function = lambda.unwrap();
+    match function {
+        LispExpr::Lambda(params, body) => {
             let mut new_env = Rc::new(RefCell::new(Env::extend(env.clone())));
             for (i, param) in params.iter().enumerate() {
-                let val = eval_obj(&list[i + 1], env)?;
-                new_env.borrow_mut().set(param, val);
+                let lisp_expr = eval_lispexpr(&lisp_exprs[i+1], env)?;
+                new_env.borrow_mut().set(param, lisp_expr);
             }
-            eval_obj(&Object::List(body), &mut new_env)
-        }
-        _ => bail!("Not a lambda: {}", key),
+            eval_lispexpr(&LispExpr::List(body), &mut new_env)
+        },
+        _ => bail!("Not a lambda"),
     }
 }
 
 #[cfg(test)]
 mod tests {
     #[test]
-    fn test_simple_add() {}
+    fn test() {}
 }

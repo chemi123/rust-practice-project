@@ -1,75 +1,35 @@
-use core::fmt;
+use anyhow::{Result, bail};
 
-use anyhow::{Result, anyhow, bail};
+use crate::{lisp_expr::LispExpr, token::Token};
 
-use crate::lexer::Token;
-
-#[derive(Debug, PartialEq, Clone)]
-pub enum Object {
-    Void,
-    Integer(i64),
-    Bool(bool),
-    Symbol(String),
-    Lambda(Vec<String>, Vec<Object>),
-    List(Vec<Object>),
-}
-
-impl fmt::Display for Object {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Object::Void => write!(f, "Void"),
-            Object::Integer(n) => write!(f, "{}", n),
-            Object::Bool(b) => write!(f, "{}", b),
-            Object::Symbol(s) => write!(f, "{}", s),
-            Object::Lambda(params, body) => {
-                write!(f, "Lambda(")?;
-                for param in params {
-                    write!(f, "{} ", param)?;
-                }
-                write!(f, ")")?;
-                for expr in body {
-                    write!(f, " {}", expr)?;
-                }
-                Ok(())
-            }
-            Object::List(list) => {
-                write!(f, "(")?;
-                for (i, object) in list.iter().enumerate() {
-                    if i > 0 {
-                        write!(f, " ")?;
-                    }
-                    write!(f, "{}", object)?;
-                }
-                Ok(())
-            }
-        }
-    }
-}
-
-pub fn parse_tokens(tokens: &mut Vec<Token>) -> Result<Object> {
-    tokens.reverse();
-    let first_token = tokens.pop().ok_or(anyhow!("empty tokens"))?;
-    if first_token != Token::LParen {
-        bail!("tokens must start with left parenthesis")
+pub fn parse(tokens: Vec<Token>) -> Result<LispExpr> {
+    if tokens.is_empty() {
+        bail!("Empty tokens")
     }
 
-    parse_tokens_inner(tokens)
+    let mut token_iter = tokens.into_iter().peekable();
+    parse_list(&mut token_iter)
 }
 
-fn parse_tokens_inner(tokens: &mut Vec<Token>) -> Result<Object> {
-    let mut objects: Vec<Object> = Vec::new();
-    while !tokens.is_empty() {
-        let token = tokens.pop().unwrap();
+fn parse_list(token_iter: &mut std::iter::Peekable<std::vec::IntoIter<Token>>) -> Result<LispExpr> {
+    let head = token_iter.next().unwrap();
+    match head {
+        Token::LParen => (),
+        _ => bail!("Expression must start with left parenthesis")
+    }
+
+    let mut lisp_exprs = Vec::new();
+    while let Some(token) = token_iter.peek() {
         match token {
-            Token::Integer(n) => objects.push(Object::Integer(n)),
-            Token::Symbol(s) => objects.push(Object::Symbol(s)),
-            Token::LParen => objects.push(parse_tokens_inner(tokens)?),
-            Token::RParen => return Ok(Object::List(objects)),
+            Token::Integer(n) => lisp_exprs.push(LispExpr::Integer(*n)),
+            Token::Symbol(s) => lisp_exprs.push(LispExpr::Symbol(s.clone())),
+            Token::LParen => lisp_exprs.push(parse_list(token_iter)?),
+            Token::RParen => return Ok(LispExpr::List(lisp_exprs)),
         }
+        token_iter.next();
     }
 
-    // ここに来る時点で最後のトークンが")"になっていないため不正
-    bail!("given an invalid expression")
+    bail!("Right parenthesis is missing")
 }
 
 #[cfg(test)]
@@ -79,36 +39,47 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_parse() {}
+    fn test_parse_fail_with_empty_tokens() {
+        let tokens = Vec::new();
+        let lisp_expr = parse(tokens);
+        assert!(lisp_expr.is_err());
+    }
 
     #[test]
-    fn test_area_of_a_circle() {
+    fn test_parse_fail_with_invalid_expression() {
+        let expr = "(+ 1 1";
+        let lisp_expr = parse(tokenize(expr).unwrap());
+        assert!(lisp_expr.is_err());
+    }
+
+    #[test]
+    fn test_parse() {
         let expr = "(
                          (define r 10)
                          (define pi 314)
                          (* pi (* r r))
                        )";
-        let objects = parse_tokens(&mut tokenize(expr).unwrap()).unwrap();
+        let lisp_expr = parse(tokenize(expr).unwrap()).unwrap();
         assert_eq!(
-            objects,
-            Object::List(vec![
-                Object::List(vec![
-                    Object::Symbol("define".to_string()),
-                    Object::Symbol("r".to_string()),
-                    Object::Integer(10),
+            lisp_expr,
+            LispExpr::List(vec![
+                LispExpr::List(vec![
+                    LispExpr::Symbol("define".to_string()),
+                    LispExpr::Symbol("r".to_string()),
+                    LispExpr::Integer(10),
                 ]),
-                Object::List(vec![
-                    Object::Symbol("define".to_string()),
-                    Object::Symbol("pi".to_string()),
-                    Object::Integer(314),
+                LispExpr::List(vec![
+                    LispExpr::Symbol("define".to_string()),
+                    LispExpr::Symbol("pi".to_string()),
+                    LispExpr::Integer(314),
                 ]),
-                Object::List(vec![
-                    Object::Symbol("*".to_string()),
-                    Object::Symbol("pi".to_string()),
-                    Object::List(vec![
-                        Object::Symbol("*".to_string()),
-                        Object::Symbol("r".to_string()),
-                        Object::Symbol("r".to_string()),
+                LispExpr::List(vec![
+                    LispExpr::Symbol("*".to_string()),
+                    LispExpr::Symbol("pi".to_string()),
+                    LispExpr::List(vec![
+                        LispExpr::Symbol("*".to_string()),
+                        LispExpr::Symbol("r".to_string()),
+                        LispExpr::Symbol("r".to_string()),
                     ]),
                 ]),
             ])
