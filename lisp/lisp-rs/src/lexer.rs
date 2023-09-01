@@ -1,12 +1,8 @@
-use anyhow::{Result, bail};
+use anyhow::Result;
 
 use crate::token::Token;
 
 pub fn tokenize(expr_str: &str) -> Result<Vec<Token>> {
-    if expr_str.trim().is_empty() {
-        bail!("Empty expression");
-    }
-
     let characters = expr_str.replace("(", " ( ")
         .replace(")", " ) ")
         .split_whitespace()

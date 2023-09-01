@@ -3,10 +3,6 @@ use anyhow::{Result, bail};
 use crate::{lisp_expr::LispExpr, token::Token};
 
 pub fn parse(tokens: Vec<Token>) -> Result<LispExpr> {
-    if tokens.is_empty() {
-        bail!("Empty tokens")
-    }
-
     let mut token_iter = tokens.into_iter().peekable();
     parse_list(&mut token_iter)
 }
